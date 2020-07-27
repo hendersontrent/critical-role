@@ -25,8 +25,7 @@ model_data <- clean %>%
     total_value == 101                                          ~ "Nat1",
     total_value == 120                                          ~ "Nat20",
     TRUE                                                        ~ "Other Totals")) %>%
-  mutate(total_value = factor(total_value, levels = c("Nat1", "Nat20", "Other Nats",
-                                                      "Other Totals")))
+  mutate(total_value = factor(total_value, levels = c("Other Totals", "Nat1", "Nat20", "Other Nats")))
 
 # Split data into test and train sets
 
@@ -44,17 +43,25 @@ test <- model_data[-train_ind,]
 
 # Training the multinomial logit model
 
-multinom.fit <- multinom(total_value ~ character, data = train)
+model <- multinom(total_value ~ character, data = train)
 
 # Checking the model
 
-summary(multinom.fit)
+summary(model)
 
 # Exponentiate coefficients to get odds
 
-exp(coef(multinom.fit))
+exp(coef(model))
 
 # Graph it
+
+theme_set(theme_sjplot())
+
+CairoPNG("output/multinom_graph.png", 1000, 600)
+plot_model(model, sort.est = TRUE, transform = "plogis", show.values = TRUE, value.offset = .3,
+           title = "Multinomial logistic regression model of roll value by character (relative to normal value rolls)", 
+           colors = c("#FD62AD"))
+dev.off()
 
 plot(Effect("character", multinom.fit), multiline = T)
 
@@ -64,7 +71,7 @@ plot(Effect("character", multinom.fit), multiline = T)
 
 # Train set
 
-train$predicted <- predict(multinom.fit, newdata = train, "class")
+train$predicted <- predict(model, newdata = train, "class")
 
 ctable <- table(train$total_value, train$predicted)
 
@@ -72,7 +79,7 @@ round((sum(diag(ctable))/sum(ctable))*100, 2)
 
 # Test set
 
-test$predicted <- predict(multinom.fit, newdata = test, "class")
+test$predicted <- predict(model, newdata = test, "class")
 
 ctable <- table(test$total_value, test$predicted)
 
