@@ -19,6 +19,9 @@ library(ggpubr)
 library(nnet)
 library(effects)
 library(forecast)
+library(sjPlot)
+library(sjlabelled)
+library(sjmisc)
 
 # Turn off scientific notation
 
