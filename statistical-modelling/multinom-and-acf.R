@@ -6,6 +6,10 @@
 # have been run first
 #---------------------------------------
 
+#----------------------------------------
+# Author: Trent Henderson, 27 July 2020
+#----------------------------------------
+
 # Load data
 
 load("data/clean.Rda")
@@ -20,12 +24,15 @@ if (!exists(keepers)) {
 
 model_data <- clean %>%
   filter(character %in% the_nein) %>%
+  mutate(character = case_when(
+    character == "Nott" ~ "Veth/Nott",
+    character == "Veth" ~ "Veth/Nott",
+    TRUE                ~ character)) %>%
   mutate(total_value = case_when(
-    total_value > 100 & total_value != 101 & total_value != 120 ~ "Other Nats",  
     total_value == 101                                          ~ "Nat1",
     total_value == 120                                          ~ "Nat20",
     TRUE                                                        ~ "Other Totals")) %>%
-  mutate(total_value = factor(total_value, levels = c("Other Totals", "Nat1", "Nat20", "Other Nats")))
+  mutate(total_value = factor(total_value, levels = c("Other Totals", "Nat1", "Nat20")))
 
 # Split data into test and train sets
 
@@ -57,11 +64,9 @@ exp(coef(model))
 
 theme_set(theme_sjplot())
 
-CairoPNG("output/multinom_graph.png", 1000, 600)
 plot_model(model, sort.est = TRUE, transform = "plogis", show.values = TRUE, value.offset = .3,
-           title = "Multinomial logistic regression model of roll value by character (relative to normal value rolls)", 
+           title = "Multinomial logistic regression model of roll value by character (relative to other value rolls)", 
            colors = c("#FD62AD"))
-dev.off()
 
 plot(Effect("character", multinom.fit), multiline = T)
 
@@ -91,6 +96,10 @@ round((sum(diag(ctable))/sum(ctable))*100, 2)
 
 acf_data <- clean %>%
   filter(character %in% the_nein) %>%
+  mutate(character = case_when(
+    character == "Nott" ~ "Veth/Nott",
+    character == "Veth" ~ "Veth/Nott",
+    TRUE                ~ character)) %>%
   filter(total_value == 120) %>%
   group_by(episode) %>%
   summarise(counts = n()) %>%
@@ -111,3 +120,11 @@ p1 <- ggAcf(acf_final$counts) +
   theme_bw() +
   theme(panel.grid.minor = element_blank())
 print(p1)
+
+#---------------------EXPORTS---------------------------------------
+
+CairoPNG("output/statistical-model.png", 1000, 600)
+plot_model(model, sort.est = TRUE, transform = "plogis", show.values = TRUE, value.offset = .3,
+           title = "Multinomial logistic regression model of roll value by character (relative to other value rolls)", 
+           colors = c("#FD62AD"))
+dev.off()

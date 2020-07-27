@@ -9,6 +9,10 @@
 # been run first
 #---------------------------------------
 
+#----------------------------------------
+# Author: Trent Henderson, 27 July 2020
+#----------------------------------------
+
 # Import data from worksheets into a list
 
 read_excel_allsheets <- function(filename, tibble = FALSE) {

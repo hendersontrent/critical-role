@@ -2,10 +2,11 @@
 # This script sets out to produce some
 # interesting data visualisations for
 # Critical Role: Wildemouth rolls
-#
-# NOTE: Data from - 
-# https://docs.google.com/spreadsheets/d/1FFuw5c6Hk1NUlHv2Wvr5b9AElLA51KtRl9ZruPU8r9k/edit#gid=134431706
 #---------------------------------------
+
+#----------------------------------------
+# Author: Trent Henderson, 27 July 2020
+#----------------------------------------
 
 # Load data
 
@@ -62,7 +63,11 @@ print(p1)
 
 nat_20s <- clean %>%
   filter(total_value == 120) %>%
-  filter(character %in% the_nein)
+  filter(character %in% the_nein) %>%
+  mutate(character = case_when(
+         character == "Nott" ~ "Veth/Nott",
+         character == "Veth" ~ "Veth/Nott",
+         TRUE                ~ character))
 
 p2 <- nat_20s %>%
   ggplot(aes(episode, after_stat(count), fill = character)) +
@@ -101,6 +106,10 @@ print(p3)
 
 heat_data <- clean %>%
   filter(character %in% the_nein) %>%
+  mutate(character = case_when(
+    character == "Nott" ~ "Veth/Nott",
+    character == "Veth" ~ "Veth/Nott",
+    TRUE                ~ character)) %>%
   mutate(total_value = case_when(
          total_value > 100 & total_value != 101 & total_value != 120 ~ "Other Nats",  
          total_value == 101                                          ~ "Nat1",
