@@ -42,7 +42,7 @@ if (!exists(keepers)) {
 # List of characters
 
 the_nein <- c("Beau", "Caduceus", "Caleb", "Fjord", "Jester", "Veth", "Yasha", 
-              "Molly")
+              "Molly", "Nott")
 
 if (!exists(keepers)) {
   keepers <- c("keepers", "the_nein")
@@ -57,7 +57,7 @@ the_palette <- c("Beau" = "#A0E7E5",
                  "Caleb" = "#189AB4",
                  "Fjord" = "#05445E",
                  "Jester" = "#9571AB",
-                 "Veth" = "#FD62AD",
+                 "Veth/Nott" = "#FD62AD",
                  "Yasha" = "#F7C9B6",
                  "Molly" = "#E7625F")
 
