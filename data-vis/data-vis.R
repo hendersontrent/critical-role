@@ -2,10 +2,11 @@
 # This script sets out to produce some
 # interesting data visualisations for
 # Critical Role: Wildemouth rolls
-#
-# NOTE: Data from - 
-# https://docs.google.com/spreadsheets/d/1FFuw5c6Hk1NUlHv2Wvr5b9AElLA51KtRl9ZruPU8r9k/edit#gid=134431706
 #---------------------------------------
+
+#----------------------------------------
+# Author: Trent Henderson, 27 July 2020
+#----------------------------------------
 
 # Load data
 
