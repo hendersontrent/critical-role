@@ -65,7 +65,7 @@ exp(coef(model))
 theme_set(theme_sjplot())
 
 the_mod <- plot_model(model, sort.est = TRUE, transform = "plogis", show.values = TRUE, value.offset = .3,
-           title = "Multinomial logistic regression model of roll value by character (relative to other value rolls)", 
+           title = "Multinomial logistic regression model of roll value by character (relative to other value rolls & Beauregard)", 
            colors = c("#FD62AD"))
 print(the_mod)
 
