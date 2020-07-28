@@ -22,6 +22,8 @@ library(forecast)
 library(sjPlot)
 library(sjlabelled)
 library(sjmisc)
+library(ggridges)
+library(mgcv)
 
 # Turn off scientific notation
 
