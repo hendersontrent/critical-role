@@ -21,11 +21,15 @@ dam_heal_plot <- dam_heals %>%
     character == "Beauregard" ~ "Beau",
     TRUE                      ~ character)) %>%
   drop_na() %>%
+  group_by(episode, character) %>%
+  summarise(damage = sum(damage),
+            healing = sum(healing)) %>%
+  ungroup() %>%
   ggplot(aes(x = damage, y = healing, colour = character)) +
   geom_smooth(formula = y ~ s(x), method = "gam", aes(group = 1)) +
   geom_point(size = 2) +
   labs(title = "The Mighty Nein damage dealt and healing given",
-       subtitle = "Each point is a single character incident",
+       subtitle = "Each point is an episode sum for damage and healing per character",
        x = "Damage Dealt",
        y = "Healing Given",
        colour = NULL) +
