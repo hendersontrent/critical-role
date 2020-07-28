@@ -50,7 +50,7 @@ test <- model_data[-train_ind,]
 
 # Training the multinomial logit model
 
-model <- multinom(total_value ~ character, data = train)
+model <- nnet::multinom(total_value ~ character, data = train)
 
 # Checking the model
 
@@ -64,11 +64,12 @@ exp(coef(model))
 
 theme_set(theme_sjplot())
 
-plot_model(model, sort.est = TRUE, transform = "plogis", show.values = TRUE, value.offset = .3,
+the_mod <- plot_model(model, sort.est = TRUE, transform = "plogis", show.values = TRUE, value.offset = .3,
            title = "Multinomial logistic regression model of roll value by character (relative to other value rolls)", 
            colors = c("#FD62AD"))
+print(the_mod)
 
-plot(Effect("character", multinom.fit), multiline = T)
+plot(Effect("character", model), multiline = T)
 
 #----------
 # ACCURACY
@@ -124,7 +125,5 @@ print(p1)
 #---------------------EXPORTS---------------------------------------
 
 CairoPNG("output/statistical-model.png", 1000, 600)
-plot_model(model, sort.est = TRUE, transform = "plogis", show.values = TRUE, value.offset = .3,
-           title = "Multinomial logistic regression model of roll value by character (relative to other value rolls)", 
-           colors = c("#FD62AD"))
+print(the_mod)
 dev.off()
