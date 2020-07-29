@@ -24,6 +24,9 @@ library(sjlabelled)
 library(sjmisc)
 library(ggridges)
 library(mgcv)
+library(rstan)
+library(bayesplot)
+library(loo)
 
 # Turn off scientific notation
 
