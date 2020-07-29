@@ -1,6 +1,6 @@
 //
 // This Stan program defines a Bayesian model for the damage/healing
-// model
+// model using character-level data from Critical Role
 //
 
 //
@@ -16,8 +16,8 @@ data {
 
 // Parameters
 parameters {
-  vector[2] beta;           // coefs
-  real<lower=0> sigma;  // error sd for Gaussian likelihood
+  vector[2] beta;           // coefficients
+  real<lower=0> sigma;  // error SD for Gaussian likelihood
 }
 
 // Model specification

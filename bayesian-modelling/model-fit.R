@@ -59,10 +59,39 @@ stan_data <- list(N = N,
 system.time({
 mod <- stan(data = stan_data, 
              file = "bayesian-modelling/the-model.stan",
-             iter = 1000,
+             iter = 1000, # 1000 seems to enable convergence, 500 does not
              seed = 123)
 })
 
 #---------------------MODEL OUTPUTS---------------------------------
 
-summary(mod)[["summary"]][c(paste0("beta[",1:2, "]"), "sigma"),]
+summary(mod)[["summary"]][c(paste0("beta[",1:2, "]"), "sigma"),] # 1SD increase in damage leads to 0.1% increase in healing
+
+#---------------------DATA VISUALISATION----------------------------
+
+vis_data <- summary(mod)$summary %>%
+  as_tibble()
+
+# Posterior predictive distribution checks
+
+set.seed(123)
+y <- healing
+yrep1 <- extract(mod)[["healing_rep"]]
+samp100 <- sample(nrow(yrep1), 100)
+ppc_dens_overlay(y, yrep1[samp100, ]) # Looks like the model resembles the data pretty well
+
+# Test statistics
+
+ppc_stat(healing, yrep1, stat = 'median') # Might be a bit low?
+
+# Out-of-sample predidictive accuracy
+
+loglik1 <- extract(mod)[["log_lik"]]
+loo1 <- loo(loglik1, save_psis = TRUE)
+loo1
+plot(loo1)
+
+# Probability integral transform to see whether each point sits in its predictive distribution
+# Output should look uniform
+
+ppc_loo_pit_overlay(yrep = yrep1, y = y, lw = weights(loo1$psis_object)) # Model could be calibrated better
