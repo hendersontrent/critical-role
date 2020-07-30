@@ -1,17 +1,14 @@
 #----------------------------------------
 # This script sets out to load data
-# and fit a specified Bayesian
-# regression model in Stan
+# and fit specified Bayesian
+# regression models in Stan and compare
+# whether a model with an interaction
+# term performs better than one without
 #----------------------------------------
 
 #----------------------------------------
 # Author: Trent Henderson, 29 July 2020
 #----------------------------------------
-
-# Load packages
-
-library(rstan)
-library(bayesplot)
 
 #---------------------DATA LOADS------------------------------------
 
@@ -33,6 +30,15 @@ the_data <- dam_heals %>%
             healing = sum(healing)) %>%
   ungroup()
 
+# Number of episodes
+
+eps <- max(the_data$episode)
+
+the_data <- the_data %>%
+  mutate(indicator = case_when(
+    episode < eps ~ 0,
+    TRUE          ~ 1))
+
 # Centre and standardise damage to enable interpretation of "X SD increase in B1 leads to a X% inc/dec in Y"
 # Healing is just log transformed
 
@@ -46,20 +52,22 @@ the_data$healing <- log(the_data$healing)
 N <- nrow(the_data)
 damage <- the_data$damage
 healing <- the_data$healing
-charac <- the_data$character
+episode <- the_data$indicator
 
-# Final list ready for import into Stan model
+# Final list ready for import into Stan models
 
 stan_data <- list(N = N,
                   damage = damage,
-                  healing = healing)
+                  healing = healing,
+                  episode = episode)
 
-#---------------------RUN MODEL-------------------------------------
+#---------------------RUN MODELS------------------------------------
 
 system.time({
 mod <- stan(data = stan_data, 
              file = "bayesian-modelling/the-model.stan",
              iter = 1000, # 1000 seems to enable convergence, 500 does not
+             chains = 4,
              seed = 123)
 })
 
@@ -69,8 +77,48 @@ summary(mod)[["summary"]][c(paste0("beta[",1:2, "]"), "sigma"),] # 1SD increase 
 
 #---------------------DATA VISUALISATION----------------------------
 
+#-----------------
+# Regression plots
+#-----------------
+
+# Extract model outputs
+
+full_output <- as.data.frame(mod) %>%
+  mutate(ID = row_number())
+
+# Take a random sample to make data vis cleaner
+
+sample_size <- floor(0.25 * nrow(full_output))
+set.seed(123)
+an_indicator <- sample(seq_len(nrow(full_output)), size = sample_size)
+shorter_full_output <- full_output[an_indicator,]
+
+# Make plot 
+
+p <- ggplot(the_data, aes(damage, healing)) + 
+  geom_abline(aes(intercept = `beta[1]`, slope = `beta[2]`), data = shorter_full_output, 
+              alpha = 0.1, color = "#A0E7E5") + 
+  geom_abline(slope = mean(shorter_full_output$`beta[2]`), 
+              intercept = mean(shorter_full_output$`beta[1]`), 
+              color = "#FD62AD", size = 1) + 
+  geom_point(colour = "#05445E", size = 2) + 
+  labs(title = "Bayesian posterior prediction of damage on healing for The Mighty Nein",
+       subtitle = paste0("Plots a random ",nrow(shorter_full_output)," posterior draws. Pink line indicates mean"),
+       x = "Damage",
+       y = "log(Healing)",
+       caption = "Source: @CritRoleStats. Analysis: Orbisant Analytics") +
+  theme_bw() +
+  theme(panel.grid.minor = element_blank())
+print(p)
+
+#------------------
+# Model comparisons
+#------------------
+
 vis_data <- summary(mod)$summary %>%
   as_tibble()
+
+posterior <- as.array(mod)
 
 # Posterior predictive distribution checks
 
@@ -78,20 +126,45 @@ set.seed(123)
 y <- healing
 yrep1 <- extract(mod)[["healing_rep"]]
 samp100 <- sample(nrow(yrep1), 100)
-ppc_dens_overlay(y, yrep1[samp100, ]) # Looks like the model resembles the data pretty well
+
+p1 <- ppc_dens_overlay(y, yrep1[samp100, ]) 
+print(p1) # Looks like the model resembles the data pretty well
+
+p1 <- p1 +
+  labs(title = "Posterior predictive check",
+       subtitle = paste0("Plots a random ",length(samp100)," posterior draws")) +
+  theme_bw() +
+  theme(panel.grid.minor = element_blank())
+print(p1)
 
 # Test statistics
 
-ppc_stat(healing, yrep1, stat = 'median') # Might be a bit low?
+p2 <- ppc_stat(healing, yrep1, stat = 'median')
+print(p2) # Might be a bit low?
+
+p2 <- p2 +
+  labs(title = "Distribution of test statistic",
+       subtitle = "Test statistic = Median") +
+  theme_bw() +
+  theme(panel.grid.minor = element_blank())
+print(p2)
 
 # Out-of-sample predidictive accuracy
 
 loglik1 <- extract(mod)[["log_lik"]]
 loo1 <- loo(loglik1, save_psis = TRUE)
-loo1
 plot(loo1)
 
 # Probability integral transform to see whether each point sits in its predictive distribution
 # Output should look uniform
 
 ppc_loo_pit_overlay(yrep = yrep1, y = y, lw = weights(loo1$psis_object)) # Model could be calibrated better
+
+#---------------------EXPORTS---------------------------------------
+
+CairoPNG("output/damage-and-healing-bayes.png", 1000, 800)
+ggarrange(p,
+          ggarrange(p1, p2, nrow = 1, ncol = 2),
+          nrow = 2)
+dev.off()
+
