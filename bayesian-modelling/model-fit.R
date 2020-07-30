@@ -71,18 +71,9 @@ mod <- stan(data = stan_data,
              seed = 123)
 })
 
-system.time({
-  mod2 <- stan(data = stan_data, 
-              file = "bayesian-modelling/the-model-interaction.stan",
-              iter = 1000,
-              chains = 4,
-              seed = 123)
-})
-
 #---------------------MODEL OUTPUTS---------------------------------
 
 summary(mod)[["summary"]][c(paste0("beta[",1:2, "]"), "sigma"),] # 1SD increase in damage leads to 0.1% increase in healing
-summary(mod2)[["summary"]][c(paste0("beta[",1:4, "]"), "sigma"),]
 
 #---------------------DATA VISUALISATION----------------------------
 
@@ -127,9 +118,6 @@ print(p)
 vis_data <- summary(mod)$summary %>%
   as_tibble()
 
-vis_data_int <- summary(mod2)$summary %>%
-  as_tibble()
-
 # Posterior predictive distribution checks
 
 set.seed(123)
@@ -138,33 +126,20 @@ yrep1 <- extract(mod)[["healing_rep"]]
 samp100 <- sample(nrow(yrep1), 100)
 ppc_dens_overlay(y, yrep1[samp100, ]) # Looks like the model resembles the data pretty well
 
-set.seed(123)
-yrep2 <- extract(mod2)[["healing_rep"]]
-samp100_int <- sample(nrow(yrep2), 100)
-ppc_dens_overlay(y, yrep2[samp100_int, ])
-
 # Test statistics
 
 ppc_stat(healing, yrep1, stat = 'median') # Might be a bit low?
-ppc_stat(healing, yrep2, stat = 'median')
 
 # Out-of-sample predidictive accuracy
 
 loglik1 <- extract(mod)[["log_lik"]]
-loglik2 <- extract(mod2)[["log_lik"]]
 loo1 <- loo(loglik1, save_psis = TRUE)
-loo2 <- loo(loglik2, save_psis = TRUE)
-
-compare(loo1, loo2)
-
 plot(loo1)
-plot(loo2)
 
 # Probability integral transform to see whether each point sits in its predictive distribution
 # Output should look uniform
 
 ppc_loo_pit_overlay(yrep = yrep1, y = y, lw = weights(loo1$psis_object)) # Model could be calibrated better
-ppc_loo_pit_overlay(yrep = yrep2, y = y, lw = weights(loo2$psis_object))
 
 #---------------------EXPORTS---------------------------------------
 
