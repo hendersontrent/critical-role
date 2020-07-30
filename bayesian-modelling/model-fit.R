@@ -103,7 +103,7 @@ p <- ggplot(the_data, aes(damage, healing)) +
               color = "#FD62AD", size = 1) + 
   geom_point(colour = "#05445E", size = 2) + 
   labs(title = "Bayesian posterior prediction of damage on healing for The Mighty Nein",
-       subtitle = paste0("Plots a random ",nrow(shorter_full_output)," posterior draws. Pink line indicates mean."),
+       subtitle = paste0("Plots a random ",nrow(shorter_full_output)," posterior draws. Pink line indicates mean"),
        x = "Damage",
        y = "log(Healing)",
        caption = "Source: @CritRoleStats. Analysis: Orbisant Analytics") +
@@ -118,17 +118,36 @@ print(p)
 vis_data <- summary(mod)$summary %>%
   as_tibble()
 
+posterior <- as.array(mod)
+
 # Posterior predictive distribution checks
 
 set.seed(123)
 y <- healing
 yrep1 <- extract(mod)[["healing_rep"]]
 samp100 <- sample(nrow(yrep1), 100)
-ppc_dens_overlay(y, yrep1[samp100, ]) # Looks like the model resembles the data pretty well
+
+p1 <- ppc_dens_overlay(y, yrep1[samp100, ]) 
+print(p1) # Looks like the model resembles the data pretty well
+
+p1 <- p1 +
+  labs(title = "Posterior predictive check",
+       subtitle = paste0("Plots a random ",length(samp100)," posterior draws")) +
+  theme_bw() +
+  theme(panel.grid.minor = element_blank())
+print(p1)
 
 # Test statistics
 
-ppc_stat(healing, yrep1, stat = 'median') # Might be a bit low?
+p2 <- ppc_stat(healing, yrep1, stat = 'median')
+print(p2) # Might be a bit low?
+
+p2 <- p2 +
+  labs(title = "Distribution of test statistic",
+       subtitle = "Test statistic = Median") +
+  theme_bw() +
+  theme(panel.grid.minor = element_blank())
+print(p2)
 
 # Out-of-sample predidictive accuracy
 
@@ -143,7 +162,9 @@ ppc_loo_pit_overlay(yrep = yrep1, y = y, lw = weights(loo1$psis_object)) # Model
 
 #---------------------EXPORTS---------------------------------------
 
-CairoPNG("output/damage-and-healing-bayes.png", 800, 600)
-print(p)
+CairoPNG("output/damage-and-healing-bayes.png", 1000, 800)
+ggarrange(p,
+          ggarrange(p1, p2, nrow = 1, ncol = 2),
+          nrow = 2)
 dev.off()
 
