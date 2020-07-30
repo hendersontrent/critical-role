@@ -67,13 +67,15 @@ system.time({
 mod <- stan(data = stan_data, 
              file = "bayesian-modelling/the-model.stan",
              iter = 1000, # 1000 seems to enable convergence, 500 does not
+             chains = 4,
              seed = 123)
 })
 
 system.time({
   mod2 <- stan(data = stan_data, 
               file = "bayesian-modelling/the-model-interaction.stan",
-              iter = 1000, # 
+              iter = 1000,
+              chains = 4,
               seed = 123)
 })
 
@@ -83,6 +85,44 @@ summary(mod)[["summary"]][c(paste0("beta[",1:2, "]"), "sigma"),] # 1SD increase 
 summary(mod2)[["summary"]][c(paste0("beta[",1:4, "]"), "sigma"),]
 
 #---------------------DATA VISUALISATION----------------------------
+
+#-----------------
+# Regression plots
+#-----------------
+
+# Extract model outputs
+
+full_output <- as.data.frame(mod) %>%
+  mutate(ID = row_number())
+
+# Take a random sample to make data vis cleaner
+
+sample_size <- floor(0.25 * nrow(full_output))
+set.seed(123)
+an_indicator <- sample(seq_len(nrow(full_output)), size = sample_size)
+shorter_full_output <- full_output[an_indicator,]
+
+# Make plot 
+
+p <- ggplot(the_data, aes(damage, healing)) + 
+  geom_abline(aes(intercept = `beta[1]`, slope = `beta[2]`), data = shorter_full_output, 
+              alpha = 0.1, color = "#A0E7E5") + 
+  geom_abline(slope = mean(shorter_full_output$`beta[2]`), 
+              intercept = mean(shorter_full_output$`beta[1]`), 
+              color = "#FD62AD", size = 1) + 
+  geom_point(colour = "#05445E", size = 2) + 
+  labs(title = "Bayesian posterior prediction of damage on healing for The Mighty Nein",
+       subtitle = paste0("Plots a random ",nrow(shorter_full_output)," posterior draws. Pink line indicates mean."),
+       x = "Damage",
+       y = "log(Healing)",
+       caption = "Source: @CritRoleStats. Analysis: Orbisant Analytics") +
+  theme_bw() +
+  theme(panel.grid.minor = element_blank())
+print(p)
+
+#------------------
+# Model comparisons
+#------------------
 
 vis_data <- summary(mod)$summary %>%
   as_tibble()
@@ -125,3 +165,10 @@ plot(loo2)
 
 ppc_loo_pit_overlay(yrep = yrep1, y = y, lw = weights(loo1$psis_object)) # Model could be calibrated better
 ppc_loo_pit_overlay(yrep = yrep2, y = y, lw = weights(loo2$psis_object))
+
+#---------------------EXPORTS---------------------------------------
+
+CairoPNG("output/damage-and-healing-bayes.png", 800, 600)
+print(p)
+dev.off()
+
