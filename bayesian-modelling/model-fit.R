@@ -149,6 +149,20 @@ p2 <- p2 +
   theme(panel.grid.minor = element_blank())
 print(p2)
 
+# Trace plot
+
+color_scheme_set("mix-blue-pink")
+p3 <- mcmc_trace(posterior, pars = c("beta[2]", "sigma"),
+                 facet_args = list(nrow = 2, labeller = label_parsed))
+print(p3)
+
+p3 <- p3 +
+  labs(title = "Trace plots for model convergence ",
+       subtitle = "Test statistic = Median") +
+  theme_bw() +
+  theme(panel.grid.minor = element_blank())
+print(p3)
+
 # Out-of-sample predidictive accuracy
 
 loglik1 <- extract(mod)[["log_lik"]]
@@ -163,8 +177,5 @@ ppc_loo_pit_overlay(yrep = yrep1, y = y, lw = weights(loo1$psis_object)) # Model
 #---------------------EXPORTS---------------------------------------
 
 CairoPNG("output/damage-and-healing-bayes.png", 1000, 800)
-ggarrange(p,
-          ggarrange(p1, p2, nrow = 1, ncol = 2),
-          nrow = 2)
+ggarrange(p, p3, p1, p2, nrow = 2, ncol = 2)
 dev.off()
-
