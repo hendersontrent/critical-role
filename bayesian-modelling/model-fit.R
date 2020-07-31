@@ -28,16 +28,19 @@ the_data <- dam_heals %>%
   group_by(episode, character) %>%
   summarise(damage = sum(damage),
             healing = sum(healing)) %>%
-  ungroup()
-
-# Number of episodes
-
-eps <- max(the_data$episode)
-
-the_data <- the_data %>%
-  mutate(indicator = case_when(
-    episode < eps ~ 0,
-    TRUE          ~ 1))
+  ungroup() %>%
+  mutate(level_up = case_when(
+         episode == 1                 ~ 2,
+         episode > 2 & episode <= 5   ~ 3,
+         episode > 5 & episode <= 13  ~ 4,
+         episode > 13 & episode <= 18 ~ 5,
+         episode > 18 & episode <= 30 ~ 6,
+         episode > 30 & episode <= 41 ~ 7,
+         episode > 41 & episode <= 49 ~ 8,
+         episode > 49 & episode <= 58 ~ 9,
+         episode > 58 & episode <= 76 ~ 10,
+         episode > 76 & episode <= 88 ~ 11,
+         episode > 88                 ~ 12)) # Levels from spreadsheet here https://www.critrolestats.com/pcstats-wm
 
 # Centre and standardise damage to enable interpretation of "X SD increase in B1 leads to a X% inc/dec in Y"
 # Healing is just log transformed
@@ -52,14 +55,14 @@ the_data$healing <- log(the_data$healing)
 N <- nrow(the_data)
 damage <- the_data$damage
 healing <- the_data$healing
-episode <- the_data$indicator
+level_up <- the_data$level_up
 
 # Final list ready for import into Stan models
 
 stan_data <- list(N = N,
                   damage = damage,
                   healing = healing,
-                  episode = episode)
+                  level_up = level_up)
 
 #---------------------RUN MODELS------------------------------------
 
