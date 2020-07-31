@@ -28,6 +28,7 @@ library(rstan)
 library(bayesplot)
 library(tidybayes)
 library(loo)
+library(png)
 
 # Turn off scientific notation
 

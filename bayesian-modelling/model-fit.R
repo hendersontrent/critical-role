@@ -93,15 +93,22 @@ set.seed(123)
 an_indicator <- sample(seq_len(nrow(full_output)), size = sample_size)
 shorter_full_output <- full_output[an_indicator,]
 
+# Image for plot
+
+# Read in picture of The Mighty Nein for background
+
+img <- readPNG("images/mn_light.png")
+
 # Make plot 
 
 p <- ggplot(the_data, aes(damage, healing)) + 
+  background_image(img) +
   geom_abline(aes(intercept = `beta[1]`, slope = `beta[2]`), data = shorter_full_output, 
-              alpha = 0.1, color = "#A0E7E5") + 
+              alpha = 0.3, color = "#F7C9B6") + 
   geom_abline(slope = mean(shorter_full_output$`beta[2]`), 
               intercept = mean(shorter_full_output$`beta[1]`), 
               color = "#FD62AD", size = 1) + 
-  geom_point(colour = "#05445E", size = 2) + 
+  geom_point(colour = "#05445E", size = 3) + 
   labs(title = "Bayesian posterior prediction of damage on healing for The Mighty Nein",
        subtitle = paste0("Plots a random ",nrow(shorter_full_output)," posterior draws. Pink line indicates mean"),
        x = "Damage",
