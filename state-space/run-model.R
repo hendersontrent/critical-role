@@ -12,7 +12,7 @@
 # Author: Trent Henderson, 12 August 2020
 #----------------------------------------
 
-load("dam_heals.Rda")
+load("data/dam_heals.Rda")
 
 #--------------------------- PRE PROCESSING ------------------------
 
@@ -23,90 +23,86 @@ raw_data <- dam_heals %>%
   mutate(variable = str_to_sentence(variable)) %>%
   group_by(episode, variable) %>%
   summarise(value = sum(value, na.rm = TRUE)) %>%
+  ungroup() %>%
+  group_by(variable) %>%
+  mutate(n = n(), sd = sd(value)) %>%
   ungroup()
-
-# Parse into healing and damage
-
-raw_damage <- raw_data %>%
-  filter(variable == "Damage")
-
-raw_healing <- raw_data %>%
-  filter(variable == "Healing")
 
 #--------------------------- MODEL SPEC ----------------------------
 
-# Define a function that can specify and run the Stan program
+the_vars <- unique(raw_data$variable)
 
-ss_model <- function(data){
+some_list <- list()
+
+for(i in the_vars){
   
-  y <- data$value
-  variable_type <- as.vector(unique(data$variable))
-  
-  # Data inputs for Stan program
-  
-  ypos <- y[!is.na(y)]
-  n_pos <- sum(!is.na(y))
-  indx_pos <- which(!is.na(y))
-  
-  # Run Stan program
+  shorter <- raw_data %>%
+    filter(variable == i)
+
+  d1 <- list(
+    mu_start = first(shorter$value),
+    n_eps = nrow(shorter),
+    y_values = shorter$value,
+    sigma = unique(shorter$sd)
+  )
   
   system.time({
-    mod <- stan(data = list(y = ypos, TT = length(y), n_pos = n_pos, indx_pos = indx_pos), 
-                file = "state-space/ss-model.stan",
-                pars = c("sd_q", "x", "sd_r", "u", "x0"),
-                iter = 4000,
-                chains = 3,
-                seed = 123)
+    mod <- stan(file = "state-space/ss-model.stan", data = d1, iter = 4000, control = list(max_treedepth = 20))
   })
   
-  # Extract model parameters as a dataframe
+  ex <- as.data.frame(rstan::extract(mod, "mu"))
   
-  pars <- rstan::extract(mod)
-  the_mean <- apply(pars$x, 2, median)
-  the_lower <- apply(pars$x, 2, quantile, 0.025)
-  the_upper <- apply(pars$x, 2, quantile, 0.975)
+  outs <- ex %>%
+    gather(key = episode, value = value, 1:105) %>%
+    mutate(episode = gsub("mu.", "\\1", episode)) %>%
+    mutate(episode = as.numeric(episode)) %>%
+    group_by(episode) %>%
+    summarise(mean = mean(value),
+              upper = quantile(value, 0.975),
+              lower = quantile(value, 0.025)) %>%
+    ungroup() %>%
+    mutate(variable = i)
   
-  the_params <- data.frame(the_median = c(the_median),
-                           the_lower = c(the_lower),
-                           the_upper = c(the_upper)) %>%
-    mutate(variable = variable_type,
-           episode = row_number())
-  
-  return(the_params)
-  
+  some_list[[i]] <- outs
+
 }
 
-mod_damage <- ss_model(raw_damage)
-mod_healing <- ss_model(raw_healing)
-
-# Merge dataframes
-
-ss_outputs <- bind_rows(mod_damage, mod_healing)
+full_models <- rbindlist(some_list, use.names = TRUE)
 
 #--------------------------- DATA VIS ------------------------------
 
+# Read in picture of The Mighty Nein for background
+
+img <- readPNG("images/mn_light.png")
+
+the_palette <- c("#F84791", "#FFA384")
+
 p <- raw_data %>%
   ggplot(aes(x = episode)) +
-  geom_ribbon(data = ss_outputs, 
-              aes(x = episode, ymin = the_lower, ymax = the_upper), fill = "#FFA384", alpha = 0.5) +
-  geom_line(data = ss_outputs, 
-            aes(x = episode, y = the_median), size = 1, colour = "#FFA384") +
-  geom_point(data = raw_data, aes(x = episode, y = value), size = 1, colour = "black") +
-  labs(title = "State space model of damage and healing by episode for The Mighty Nein",
-       subtitle = "Each point is an episode sum across all characters",
+  background_image(img) +
+  geom_ribbon(data = full_models, 
+              aes(x = episode, ymin = lower, ymax = upper, fill = variable), alpha = 0.4) +
+  geom_line(data = full_models, 
+            aes(x = episode, y = mean, colour = variable), size = 1.1) +
+  geom_point(data = raw_data, aes(x = episode, y = value), size = 1.5, colour = "black") +
+  labs(title = "Bayesian state space model of The Mighty Nein's damage and healing by episode",
+       subtitle = "Each point is an episode sum across all characters. Coloured shading indicates 95% credible interval.",
        x = "Episode",
-       y = "Value",
+       y = "Episode Sum Value",
        caption = "Source: @CritRoleStats. Analysis: Orbisant Analytics.") +
   theme_bw() +
-  theme(legend.position = "bottom",
-        panel.grid.minor = element_blank(),
+  scale_colour_manual(values = the_palette) +
+  scale_fill_manual(values = the_palette) +
+  guides(fill = FALSE) +
+  theme(legend.position = "none",
+        panel.grid = element_blank(),
         strip.background = element_rect(fill = "#E7F2F8"),
         strip.text = element_text(face = "bold", colour = "black")) +
-  facet_grid(variable ~ .)
+  facet_grid(variable ~.)
 print(p)
 
 #--------------------------- OUTPUT --------------------------------
 
-CairoPNG("output/ss-model.png", 550, 350)
+CairoPNG("output/ss-model.png", 700, 500)
 print(p)
 dev.off()
