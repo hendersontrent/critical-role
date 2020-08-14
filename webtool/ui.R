@@ -57,21 +57,39 @@ shinyUI(navbarPage(theme = "corp-styles.css",
                               column(1),
                               column(1)
                               
-                            )
+                             )
                             
-                   ),
+                            ),
                    
                    #----------------------Affordability index header--------------------------
                    tabPanel(navtab1,
                             fluidRow(h1("Character Analysis")
-                            )
-                   ),
+                                     )
+                            ),
                    
                    #----------------------Affordability index header--------------------------
                    tabPanel(navtab2,
                             fluidRow(h1("State Space Modelling")
+                            ),
+                            fluidRow(
+                              sidebarLayout(
+                                sidebarPanel(
+                                  h2("Page Details"),
+                                  p("This page produces outputs from a Bayesian state space model that was written to analyse damage dealt and healing given by episode. The analysis may take a few minutes to compute (and the graph to appear) as it is a complex statistical model."),
+                                  actionButton("go_ss", "Run Model")
+                                ),
+                                mainPanel(
+                                  fluidRow(column(9,
+                                    h3("State Space Model Output"),
+                                    shinycssloaders::withSpinner(plotOutput("ss_model", height = "550px")),
+                                    br(),
+                                    p("Points indicate actual data (aggregated sums per episode across all characters). Lines indicate mean posterior estimates. Shaded areas indicate 95% credible intervals.")
+                                   )
+                                  )
+                                )
+                              )
                             )
-                   ),
+                          ),
                    
                    #----------------------Help page header------------------------------------
                    tabPanel(navtab3,
