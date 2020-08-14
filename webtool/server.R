@@ -33,6 +33,16 @@ shinyServer <- function(input, output, session) {
   
   #------------------------DATA PREP---------------------------------------
   
+  #-------------------
+  # ROLLS DATA
+  #-------------------
+  
+  rolls_data <- rolls_prep(rolls_raw)
+  
+  #-------------------
+  # DAMAGE AND HEALING
+  #-------------------
+  
   damage_clean <- cleaner(damage) %>%
     rename(damage = value)
   
@@ -56,7 +66,116 @@ shinyServer <- function(input, output, session) {
   
   #------------------------ANALYSIS TAB------------------------------------
   
-  # XX
+  # Heatmap
+  
+  output$tile_plot <- renderPlot({
+    
+    heat_data <- heatmap_prep(rolls_data)
+    
+    p <- heat_data %>%
+      ggplot(aes(x = total_value, y = character, fill = props)) +
+      geom_tile(aes(width = 0.9, height = 0.9), stat = "identity") +
+      geom_text(aes(x = total_value, y = character,
+                    label = paste0(props,"%")), colour = "white") +
+      labs(x = "Total Roll Value",
+           y = NULL,
+           fill = "% Total Rolls") +
+      scale_fill_gradient(low = "#05445E", high = "#FD62AD",
+                          label = function(x) paste0(x,"%")) +
+      theme_bw() +
+      theme(legend.position = "bottom",
+            panel.grid = element_blank(),
+            panel.border = element_blank(),
+            panel.background = element_blank(),
+            plot.background = element_blank(),
+            legend.background = element_blank(),
+            axis.title = element_text(face = "bold"),
+            axis.text = element_text(face = "bold"))
+    print(p)
+    
+  },
+  bg = "transparent")
+  
+  # Ridgeplot
+  
+  output$ridge_dens <- renderPlot({
+    
+    the_dens <- rolls_data %>%
+      filter(character %in% the_nein) %>%
+      mutate(character = case_when(
+        character == "Nott" ~ "Veth/Nott",
+        character == "Veth" ~ "Veth/Nott",
+        TRUE                ~ character)) %>%
+      filter(total_value < 100) %>%
+      ggplot(aes(x = total_value, y = character, fill = ..x..)) +
+      geom_density_ridges_gradient(scale = 3, rel_min_height = 0.01) +
+      labs(x = "Total Roll Value",
+           y = NULL,
+           fill = "Roll value") +
+      theme_bw() +
+      scale_x_continuous(limits = c(0,50),
+                         breaks = c(0,10,20,30,40,50)) +
+      scale_fill_gradient(low = "#A0E7E5", high = "#FD62AD") +
+      theme(legend.position = "bottom",
+            panel.grid.minor = element_blank(),
+            panel.border = element_blank(),
+            panel.background = element_blank(),
+            plot.background = element_blank(),
+            legend.background = element_blank(),
+            axis.title = element_text(face = "bold"),
+            axis.text = element_text(face = "bold"))
+    print(the_dens)
+    
+  },
+  bg = "transparent")
+  
+  # Time series density
+  
+  output$ts_dens <- renderPlot({
+    
+    nat_20s <- rolls_data %>%
+      filter(total_value == 120) %>%
+      filter(character %in% the_nein) %>%
+      mutate(character = case_when(
+        character == "Nott" ~ "Veth/Nott",
+        character == "Veth" ~ "Veth/Nott",
+        TRUE                ~ character))
+    
+    ts_dens <- nat_20s %>%
+      ggplot(aes(episode, after_stat(count), fill = character)) +
+      geom_density(position = "fill") +
+      labs(x = "Episode",
+           y = "Roll Count Density",
+           fill = NULL) +
+      theme_bw() +
+      scale_fill_manual(values = the_palette) +
+      theme(legend.position = "bottom",
+            panel.grid.minor = element_blank(),
+            panel.border = element_blank(),
+            panel.background = element_blank(),
+            plot.background = element_blank(),
+            legend.background = element_blank(),
+            axis.title = element_text(face = "bold"),
+            axis.text = element_text(face = "bold"))
+    print(ts_dens)
+    
+  },
+  bg = "transparent")
+  
+  # Multinomial model
+  
+  output$multinom_plot <- renderPlot({
+    
+    mod_dat <- multinom_prep(rolls_data)
+    
+    theme_set(theme_sjplot())
+    
+    the_mod <- plot_model(mod_dat, sort.est = TRUE, transform = "plogis", show.values = TRUE, value.offset = .3,
+                          title = "", colors = c("#FD62AD"))
+    print(the_mod)
+    
+  },
+  bg = "transparent")
   
   #------------------------STATE SPACE TAB---------------------------------
   
@@ -128,9 +247,12 @@ shinyServer <- function(input, output, session) {
             strip.text = element_text(face = "bold", colour = "black"),
             panel.border = element_blank(),
             panel.background = element_blank(),
-            plot.background = element_blank()) +
+            plot.background = element_blank(),
+            axis.title = element_text(face = "bold"),
+            axis.text = element_text(face = "bold")) +
       facet_grid(variable ~.)
     print(p)
-  })
+  },
+  bg = "transparent")
   
 }

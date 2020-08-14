@@ -14,6 +14,8 @@ library(ggridges)
 library(googlesheets4)
 library(plotly)
 library(shinycssloaders)
+library(nnet)
+library(sjPlot)
 
 # Load HTML files
 
@@ -62,6 +64,7 @@ ss_palette <- c("#F84791", "#FFA384")
 
 damage <- read_excel("data/Damage Dealt - Wildemount.xlsx", sheet = 1)
 healing <- read_excel("data/Healing Given - Wildemount.xlsx", sheet = 1)
+rolls_raw <- read_excel_allsheets("data/All Rolls - Wildemount.xlsx")
 
 #damage <- read_sheet("https://docs.google.com/spreadsheets/d/1SSrrWbtx1i4EJBPXLSfhcbiOrWXHdd0WW7-9oGt2dm4/edit#gid=0")
 #healing <- read_sheet("https://docs.google.com/spreadsheets/d/1wlauv_gP3m8JQyXNbwNYS-WwPtvYFo88mjNLJEEQstQ/edit#gid=0")

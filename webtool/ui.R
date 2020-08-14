@@ -61,13 +61,64 @@ shinyUI(navbarPage(theme = "corp-styles.css",
                             
                             ),
                    
-                   #----------------------Affordability index header--------------------------
+                   #----------------------Character analysis header---------------------------
                    tabPanel(navtab1,
                             fluidRow(h1("Character Analysis")
+                                     ),
+                            tabsetPanel(id = "analysis_tabs",
+                              tabPanel("High Level Roll Visualisation",
+                                sidebarLayout(
+                                  sidebarPanel(
+                                    h2("Page Details"),
+                                    p("This page produces a range of data visualisations for dice roll data by character.")
+                                  ),
+                                  mainPanel(
+                                   fluidRow(column(9,
+                                    h3("The Mighty Nein total roll value breakdown by character"),
+                                    plotOutput("tile_plot", height = "450px")
+                                      )
                                      )
+                                    )
+                                   )
+                                  ),
+                              tabPanel("Distribution Analysis",
+                                sidebarLayout(
+                                   sidebarPanel(
+                                     h2("Page Details"),
+                                     p("This page produces a range of data visualisations for dice roll data by character.")
+                                         ),
+                                   mainPanel(
+                                    fluidRow(column(9,
+                                     h3("Distribution of Total Roll Values"),
+                                     plotOutput("ridge_dens", height = "450px")
+                                                )
+                                              ),
+                                    fluidRow(
+                                     h3("Episode Time-Series Distribution of Rolls"),
+                                     plotOutput("ts_dens", height = "450px")
+                                               )
+                                             )
+                                           )
+                                         ),
+                              tabPanel("Multinomial Roll Model",
+                                       sidebarLayout(
+                                         sidebarPanel(
+                                           h2("Page Details"),
+                                           p("This page produces a range of data visualisations for dice roll data by character.")
+                                         ),
+                                   mainPanel(
+                                     fluidRow(column(9,
+                                      h3("Probability of rolling a Nat1 or Nat20 relative to intercept (made up of other rolls & Beauregard)"),
+                                      plotOutput("multinom_plot", height = "450px")
+                                             )
+                                            )
+                                           )
+                                          )
+                                         )
+                                        )
                             ),
                    
-                   #----------------------Affordability index header--------------------------
+                   #----------------------State space modelling header------------------------
                    tabPanel(navtab2,
                             fluidRow(h1("State Space Modelling")
                             ),
